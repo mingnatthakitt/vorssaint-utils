@@ -47,6 +47,18 @@ def availability_declaration(path, prefix):
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    gemini = (ROOT / "Sources/Vorssaint/Services/GeminiLive/GeminiLiveService.swift").read_text()
+    imports = "\n".join(line for line in gemini.splitlines() if line.startswith("import "))
+    body = "\n".join(line for line in gemini.splitlines() if not line.startswith("import "))
+    conformance = re.search(r"\n}\n\nextension GeminiLiveService: (.+) \{\n", body)
+    if conformance is None:
+        raise ValueError("Expected Gemini lifecycle delegate extension")
+    body = body.replace("NSObject, ObservableObject {", "NSObject, ObservableObject, " + conformance[1] + " {")
+    body = body.replace(conformance[0], "\n")
+    # Exercise the entire production lifecycle against picker/capture/socket doubles.
+    # Expose state only in the generated fixture to deliver frames without hardware.
+    write("GeminiLiveLifecycle.swift", imports + "\nextension GeminiLiveLifecycleTests {\n"
+          + body.replace("private(set) ", "").replace("fileprivate ", "").replace("private ", "") + "\n}\n")
     write("NotchActivityPicker.swift", "import SwiftUI\n"
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchShape: Shape {")
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchActivityPicker: View {"))

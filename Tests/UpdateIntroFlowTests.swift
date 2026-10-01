@@ -22,6 +22,15 @@ enum UpdateIntroFlowTests {
         }
     }
     enum WindowActivationPolicy { static func release() {} }
+    enum AppFeature {
+        case geminiLive
+        var isAvailable: Bool { true }
+    }
+    @MainActor final class GeminiLiveService {
+        static let shared = GeminiLiveService()
+        var stops = 0
+        func stop() { stops += 1 }
+    }
     final class SecureInputMonitor {
         static let shared = SecureInputMonitor()
         func setSettingsWindowOpen(_ open: Bool) {}
@@ -58,6 +67,18 @@ enum UpdateIntroFlowTests {
     }
 
     static func run(_ suite: TestSuite) {
+        MainActor.assumeIsolated {
+            let host = Host()
+            let settings = NSWindow()
+            settings.isReleasedWhenClosed = false
+            host.settingsWindow = settings
+            let before = GeminiLiveService.shared.stops
+            host.windowWillClose(Notification(name: NSWindow.willCloseNotification, object: NSWindow()))
+            suite.expect(GeminiLiveService.shared.stops == before, "unrelated window closure leaves Gemini sharing alone")
+            host.windowWillClose(Notification(name: NSWindow.willCloseNotification, object: settings))
+            suite.expect(GeminiLiveService.shared.stops == before + 1 && host.settingsWindow === settings,
+                         "closing retained Settings ends sharing without relying on view disappearance")
+        }
         let domain = "com.vorssaint.tests.update-intros.\(UUID().uuidString)"
         UserDefaults.standard = Foundation.UserDefaults(suiteName: domain)!
         defer {

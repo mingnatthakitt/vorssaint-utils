@@ -33,8 +33,9 @@ final class GeminiLiveService: NSObject, ObservableObject {
     private var playbackFrames = 0
     private var audioPending = false
     private var videoPending = false
+    private var latestFrame: Data?
     @Published private(set) var microphoneRequestPending = false
-    private var pickerActive = false
+    private var pickerObserver: GeminiLivePickerObserver?
 
     private var strings: GeminiLiveStrings { FeatureStrings.geminiLive(L10n.shared.language) }
 
@@ -55,9 +56,10 @@ final class GeminiLiveService: NSObject, ObservableObject {
         config.allowedPickerModes = [.singleWindow, .singleDisplay]
         config.allowsChangingSelectedContent = false
         picker.defaultConfiguration = config
-        picker.add(self)
+        let observer = GeminiLivePickerObserver(service: self, id: generation)
+        pickerObserver = observer
+        picker.add(observer)
         picker.isActive = true
-        pickerActive = true
         picker.present()
     }
 
@@ -89,10 +91,11 @@ final class GeminiLiveService: NSObject, ObservableObject {
         screenOutput = nil
         audioPending = false
         videoPending = false
-        if pickerActive {
-            SCContentSharingPicker.shared.remove(self)
+        latestFrame = nil
+        if let pickerObserver {
+            SCContentSharingPicker.shared.remove(pickerObserver)
             SCContentSharingPicker.shared.isActive = false
-            pickerActive = false
+            self.pickerObserver = nil
         }
     }
 
@@ -122,7 +125,8 @@ final class GeminiLiveService: NSObject, ObservableObject {
     }
 
     private func connect(filter: SCContentFilter) {
-        guard state == .selecting, AppFeature.geminiLive.isAvailable,
+        guard state == .selecting else { return }
+        guard AppFeature.geminiLive.isAvailable,
               let url = GeminiLiveSupport.endpoint(apiKey: apiKey) else { stop(); return }
         state = .connecting
         let id = generation
@@ -158,6 +162,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
                         guard self.generation == id else { return }
                         self.timeoutTask?.cancel()
                         self.state = .live
+                        self.flushVideo()
                     }
                     if event.interrupted { self.clearPlayback() }
                     if let text = event.inputText { self.inputText = String((self.inputText + text).suffix(4000)) }
@@ -179,18 +184,43 @@ final class GeminiLiveService: NSObject, ObservableObject {
         error = message
     }
 
-    private func send(_ message: [String: Any], video: Bool? = nil) {
+    private func receiveFrame(_ data: Data) {
+        // Keep one successor while startup or a slow send is in progress. Idle
+        // screens need not produce another complete frame to make this deliver.
+        latestFrame = data
+        flushVideo()
+    }
+
+    private func flushVideo() {
+        guard AppFeature.geminiLive.isAvailable, state == .live, let socket,
+              !videoPending, let frame = latestFrame else { return }
+        latestFrame = nil
+        videoPending = true
+        let id = generation
+        Task { [weak self] in
+            do {
+                let data = try JSONSerialization.data(withJSONObject: GeminiLiveSupport.realtime(frame, video: true))
+                try await socket.send(.data(data))
+                guard let self, self.generation == id else { return }
+                self.videoPending = false
+                self.flushVideo()
+            } catch {
+                guard let self, self.generation == id else { return }
+                self.fail(self.strings.connectionFailed)
+            }
+        }
+    }
+
+    private func send(_ message: [String: Any], audio: Bool = false) {
         guard AppFeature.geminiLive.isAvailable, state == .live, let socket else { return }
-        if video == true { guard !videoPending else { return }; videoPending = true }
-        if video == false { guard !audioPending else { return }; audioPending = true }
+        if audio { guard !audioPending else { return }; audioPending = true }
         let id = generation
         Task { [weak self] in
             do {
                 let data = try JSONSerialization.data(withJSONObject: message)
                 try await socket.send(.data(data))
                 guard let self, self.generation == id else { return }
-                if video == true { self.videoPending = false }
-                if video == false { self.audioPending = false }
+                if audio { self.audioPending = false }
             } catch {
                 guard let self, self.generation == id else { return }
                 self.fail(self.strings.connectionFailed)
@@ -212,7 +242,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
         let output = GeminiLiveScreenOutput { [weak self] data in
             Task { @MainActor in
                 guard let self, self.generation == id else { return }
-                self.send(GeminiLiveSupport.realtime(data, video: true), video: true)
+                self.receiveFrame(data)
             }
         }
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
@@ -247,7 +277,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
             Task { @MainActor in
                 guard let self, self.generation == id, !self.isMuted,
                       self.playbackFrames == 0 else { return }
-                self.send(GeminiLiveSupport.realtime(data, video: false), video: false)
+                self.send(GeminiLiveSupport.realtime(data, video: false), audio: true)
             }
         }
         captureEngine = engine
@@ -303,21 +333,24 @@ final class GeminiLiveService: NSObject, ObservableObject {
         }
         player?.play()
     }
+
+    fileprivate func pickerCancelled(id: UUID) {
+        guard generation == id, state == .selecting else { return }
+        stop()
+    }
+
+    fileprivate func pickerSelected(_ filter: SCContentFilter, id: UUID) {
+        guard generation == id, state == .selecting else { return }
+        connect(filter: filter)
+    }
+
+    fileprivate func pickerFailed(id: UUID) {
+        guard generation == id, state == .selecting else { return }
+        fail(strings.captureFailed)
+    }
 }
 
-extension GeminiLiveService: SCContentSharingPickerObserver, SCStreamDelegate {
-    nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
-        Task { @MainActor in if self.state == .selecting { self.stop() } }
-    }
-
-    nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
-        Task { @MainActor in self.connect(filter: filter) }
-    }
-
-    nonisolated func contentSharingPickerStartDidFailWithError(_ error: Error) {
-        Task { @MainActor in self.fail(self.strings.captureFailed) }
-    }
-
+extension GeminiLiveService: SCStreamDelegate {
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
         Task { @MainActor in
             guard self.stream === stream else { return }
@@ -326,12 +359,35 @@ extension GeminiLiveService: SCContentSharingPickerObserver, SCStreamDelegate {
     }
 }
 
+/// Each picker presentation carries its own immutable session identity, including
+/// callbacks already queued when its observer is removed during stop/restart.
+private final class GeminiLivePickerObserver: NSObject, SCContentSharingPickerObserver {
+    private weak var service: GeminiLiveService?
+    private let id: UUID
+
+    init(service: GeminiLiveService, id: UUID) {
+        self.service = service
+        self.id = id
+    }
+
+    func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
+        Task { @MainActor [weak service, id] in service?.pickerCancelled(id: id) }
+    }
+
+    func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
+        Task { @MainActor [weak service, id] in service?.pickerSelected(filter, id: id) }
+    }
+
+    func contentSharingPickerStartDidFailWithError(_ error: Error) {
+        Task { @MainActor [weak service, id] in service?.pickerFailed(id: id) }
+    }
+}
+
 private final class GeminiLiveScreenOutput: NSObject, SCStreamOutput {
     let queue = DispatchQueue(label: "com.vorssaint.gemini-live.screen", qos: .utility)
     private let context = CIContext(options: [.cacheIntermediates: false])
     private let colorSpace = CGColorSpaceCreateDeviceRGB()
     private let onFrame: (Data) -> Void
-    private var lastFrame = Date.distantPast
 
     init(onFrame: @escaping (Data) -> Void) { self.onFrame = onFrame }
 
@@ -340,9 +396,7 @@ private final class GeminiLiveScreenOutput: NSObject, SCStreamOutput {
               let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
               let status = attachments.first?[.status] as? Int,
               status == SCFrameStatus.complete.rawValue,
-              Date().timeIntervalSince(lastFrame) >= 0.9,
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        lastFrame = Date()
         autoreleasepool {
             guard let jpeg = context.jpegRepresentation(of: CIImage(cvPixelBuffer: pixelBuffer), colorSpace: colorSpace,
                 options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.65]) else { return }
