@@ -550,7 +550,7 @@ private enum UtilityPanelItem: String, PanelOrderItem, Identifiable {
     // are migrated once without disturbing the rest of the user's layout.
     case screenshot, quickLauncher, appUpdates, cleaner, homebrew, media, clipboard, windowLayout,
          uninstaller, cleanURL, cleaning, screenOCR, colorPicker, cameraPreview, scratchpad,
-         commandBar, screenRecorder, portManager
+         commandBar, screenRecorder, portManager, geminiLive
 
     var id: String { rawValue }
 
@@ -575,6 +575,7 @@ private enum UtilityPanelItem: String, PanelOrderItem, Identifiable {
         case .cameraPreview: return .cameraPreview
         case .scratchpad: return .scratchpad
         case .commandBar: return .commandBar
+        case .geminiLive: return .geminiLive
         case .portManager: return .portManager
         }
     }
@@ -611,6 +612,7 @@ struct UtilitiesSection: View {
     @AppStorage(DefaultsKey.panelUtilityScratchpad) private var showScratchpad = true
     @AppStorage(DefaultsKey.panelUtilityCommandBar) private var showCommandBar = true
     @AppStorage(DefaultsKey.panelUtilityScreenRecorder) private var showScreenRecorder = true
+    @AppStorage(DefaultsKey.panelUtilityGeminiLive) private var showGeminiLive = true
     @AppStorage(DefaultsKey.panelUtilityPortManager) private var showPortManager = true
     @ObservedObject private var recorder = ScreenRecorderService.shared
     @AppStorage(DefaultsKey.clipboardHistoryEnabled) private var clipboardEnabled = false
@@ -775,6 +777,7 @@ struct UtilitiesSection: View {
         case .quickLauncher: return showQuickLauncher
         case .screenshot: return showScreenshot
         case .screenRecorder: return showScreenRecorder
+        case .geminiLive: return showGeminiLive
         case .portManager: return showPortManager
         }
     }
@@ -1011,6 +1014,16 @@ struct UtilitiesSection: View {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                         CommandBarService.shared.show()
                                     }
+                                })
+        case .geminiLive:
+            UtilityActionButton(title: FeatureStrings.geminiLive(l10n.language).title,
+                                caption: FeatureStrings.geminiLive(l10n.language).description,
+                                systemImage: "sparkles", isEditing: editing, showsDragHandle: true,
+                                visibility: $showGeminiLive,
+                                action: {
+                                    appDelegate()?.closePopover()
+                                    SettingsRouter.shared.page = .geminiLive
+                                    appDelegate()?.openSettingsWindow()
                                 })
         case .portManager:
             UtilityActionButton(title: FeatureStrings.portManager(l10n.language).title,

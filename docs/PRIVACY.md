@@ -19,7 +19,7 @@ Clipboard history, including the images and files you copy, lives in the app's l
 
 Recent Captures keeps up to 12 screenshots, within a 256 MB limit, in the app's private local cache so you can reopen them. Recordings are not duplicated: only their existing path and a small thumbnail are kept. Clear removes that history and its cached images. When a screenshot is copied as a file, its private local PNG is kept temporarily so other apps can finish reading it, then cleaned on later copies once it is older than 24 hours or earlier when the bounded cache fills. None of these local caches is uploaded automatically.
 
-When a feature needs a macOS permission such as Accessibility, Screen Recording or Microphone, that access is used only for the feature it belongs to. Captured content leaves the Mac only when you explicitly share it, from the Share menu or with a temporary link, and the audio of apps you route to AirPlay goes only to the speaker you pick on your local network. The [permissions guide](PERMISSIONS.md) breaks down each permission.
+When a feature needs a macOS permission such as Accessibility, Screen Recording or Microphone, that access is used only for the feature it belongs to. Captured content leaves the Mac only when you explicitly share it, from the Share menu, with a temporary link, or through an explicitly started Gemini Live session, and the audio of apps you route to AirPlay goes only to the speaker you pick on your local network. The [permissions guide](PERMISSIONS.md) breaks down each permission.
 
 ## Optional notch features
 
@@ -86,3 +86,11 @@ This page describes how the current version of Vorssaint behaves. If the app's b
 ## Questions
 
 If anything here is unclear, open a question in [GitHub issues](https://github.com/vorssaint/vorssaint-utils/issues), or have a look at [support](../SUPPORT.md).
+
+## Gemini Live (optional)
+
+Gemini Live is uninstalled by default. Installing it does not start a network connection or capture. When you choose Share screen, macOS asks you to select a screen or window. Only that selection is streamed to `generativelanguage.googleapis.com`, as JPEG frames at up to one frame per second, over an encrypted WebSocket. The microphone starts muted; enabling it asks for Microphone access and streams mono PCM audio directly to Google. Gemini returns speech and transcription. Vorssaint does not save the frames, audio or transcripts to disk. Transcripts are bounded in memory while the page is open.
+
+You supply your own Google Gemini API key. Saving it stores it in this Mac’s Keychain; removing it deletes that credential. Keys are not synced or included in settings backups, sent to Vorssaint, or printed in diagnostics. Google may charge your API account, and its processing of the content is governed by its own service terms and privacy policy. The key is sent only to Google for authentication.
+
+Stop sharing, leaving the Gemini Live page, uninstalling the feature, sleep, screen lock, a capture error or a lost connection stops the session. There is no automatic reconnection. Microphone audio is paused while Gemini speech plays to reduce speaker feedback. This feature offers screen understanding and conversation, with no computer-control tools.
