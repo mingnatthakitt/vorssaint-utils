@@ -49,6 +49,9 @@ def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     gemini = (ROOT / "Sources/Vorssaint/Services/GeminiLive/GeminiLiveService.swift").read_text()
     imports = "\n".join(line for line in gemini.splitlines() if line.startswith("import "))
+    # AVAudioConverter invokes its input block synchronously. The Swift tap
+    # double lacks the framework method's concurrency import annotations.
+    imports = imports.replace("import AVFoundation", "@preconcurrency import AVFoundation")
     body = "\n".join(line for line in gemini.splitlines() if not line.startswith("import "))
     conformance = re.search(r"\n}\n\nextension GeminiLiveService: (.+) \{\n", body)
     if conformance is None:

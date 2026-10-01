@@ -13,6 +13,11 @@ enum GeminiLiveTests {
                      && components.queryItems == [URLQueryItem(name: "key", value: "key&extra=secret+/?")],
                      "credential characters remain a single encoded query value")
         let setup = GeminiLiveSupport.setup["setup"] as! [String: Any]
+        let realtime = setup["realtimeInputConfig"] as? [String: Any]
+        let detection = realtime?["automaticActivityDetection"] as? [String: Bool]
+        suite.expect(realtime?["activityHandling"] as? String == "START_OF_ACTIVITY_INTERRUPTS"
+                     && detection?["disabled"] == false,
+                     "speech detection is enabled and new speech interrupts the model response")
         suite.expect(setup["tools"] == nil && setup["thinkingConfig"] == nil,
                      "screen conversation does not grant computer-control tools or unsupported thinking config")
         let audio = Data([0, 0, 255, 127])

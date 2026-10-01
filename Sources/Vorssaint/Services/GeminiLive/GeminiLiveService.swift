@@ -26,8 +26,9 @@ final class GeminiLiveService: NSObject, ObservableObject {
     private var apiKey = ""
     private var stream: SCStream?
     private var screenOutput: GeminiLiveScreenOutput?
-    private var captureEngine: AVAudioEngine?
-    private var playbackEngine: AVAudioEngine?
+    private var audioEngine: AVAudioEngine?
+    private var microphoneTapInstalled = false
+    private var microphoneGeneration = UUID()
     private var player: AVAudioPlayerNode?
     private var playbackGeneration = UUID()
     private var playbackFrames = 0
@@ -81,8 +82,8 @@ final class GeminiLiveService: NSObject, ObservableObject {
         network = nil
         stopMicrophone()
         clearPlayback()
-        playbackEngine?.stop()
-        playbackEngine = nil
+        audioEngine?.stop()
+        audioEngine = nil
         player = nil
         if let stream {
             self.stream = nil
@@ -118,8 +119,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
                 try startMicrophone()
                 isMuted = false
             } catch {
-                stopMicrophone()
-                self.error = strings.audioFailed
+                fail(strings.audioFailed)
             }
         }
     }
@@ -254,13 +254,21 @@ final class GeminiLiveService: NSObject, ObservableObject {
     }
 
     private func startMicrophone() throws {
-        let engine = AVAudioEngine()
+        let engine = try prepareAudioEngine()
         let input = engine.inputNode
+        // Both directions must use the same voice-processing IO unit so its
+        // echo canceller receives the actual assistant playback reference.
+        if !input.isVoiceProcessingEnabled {
+            engine.stop()
+            try input.setVoiceProcessingEnabled(true)
+        }
+        input.isVoiceProcessingInputMuted = false
         let hardware = input.outputFormat(forBus: 0)
         guard hardware.sampleRate > 0, hardware.channelCount > 0,
               let target = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true),
               let converter = AVAudioConverter(from: hardware, to: target) else { throw CocoaError(.coderInvalidValue) }
         let id = generation
+        let microphoneID = microphoneGeneration
         input.installTap(onBus: 0, bufferSize: 2048, format: hardware) { [weak self] buffer, _ in
             let capacity = AVAudioFrameCount(Double(buffer.frameLength) * 16000 / hardware.sampleRate) + 64
             guard let converted = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: capacity) else { return }
@@ -275,21 +283,24 @@ final class GeminiLiveService: NSObject, ObservableObject {
             guard error == nil, converted.frameLength > 0, let samples = converted.int16ChannelData else { return }
             let data = Data(bytes: samples.pointee, count: Int(converted.frameLength) * 2)
             Task { @MainActor in
-                guard let self, self.generation == id, !self.isMuted,
-                      self.playbackFrames == 0 else { return }
+                guard let self, self.generation == id, self.microphoneGeneration == microphoneID,
+                      !self.isMuted else { return }
                 self.send(GeminiLiveSupport.realtime(data, video: false), audio: true)
             }
         }
-        captureEngine = engine
-        try engine.start()
+        microphoneTapInstalled = true
+        if !engine.isRunning { try engine.start() }
+        if playbackFrames > 0 { player?.play() }
     }
 
     private func stopMicrophone() {
-        if let engine = captureEngine {
+        microphoneGeneration = UUID()
+        if microphoneTapInstalled, let engine = audioEngine {
+            engine.inputNode.isVoiceProcessingInputMuted = true
             engine.inputNode.removeTap(onBus: 0)
-            engine.stop()
         }
-        captureEngine = nil
+        microphoneTapInstalled = false
+        // Keep playback running on mute; the entire engine stops with the session.
     }
 
     private func clearPlayback() {
@@ -299,17 +310,22 @@ final class GeminiLiveService: NSObject, ObservableObject {
         player?.reset()
     }
 
+    private func prepareAudioEngine() throws -> AVAudioEngine {
+        if let audioEngine { return audioEngine }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1) else { throw CocoaError(.coderInvalidValue) }
+        let engine = AVAudioEngine()
+        let node = AVAudioPlayerNode()
+        engine.attach(node)
+        engine.connect(node, to: engine.mainMixerNode, format: format)
+        audioEngine = engine
+        player = node
+        return engine
+    }
+
     private func play(_ data: Data) throws {
         guard data.count.isMultiple(of: 2), let format = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1) else { return }
-        if playbackEngine == nil {
-            let engine = AVAudioEngine()
-            let node = AVAudioPlayerNode()
-            engine.attach(node)
-            engine.connect(node, to: engine.mainMixerNode, format: format)
-            try engine.start()
-            playbackEngine = engine
-            player = node
-        }
+        let engine = try prepareAudioEngine()
+        if !engine.isRunning { try engine.start() }
         let frames = data.count / 2
         // Bound queued speech even if playback falls behind the network.
         guard playbackFrames + frames <= 24000 * 30,
