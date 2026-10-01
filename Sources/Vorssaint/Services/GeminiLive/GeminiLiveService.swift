@@ -7,11 +7,11 @@ import Combine
 import CoreImage
 import ScreenCaptureKit
 
-/// Only exists when its settings page is opened. No capture or network work at rest.
+/// Voice sessions start on demand; screen capture is a separate, explicit opt-in.
 @MainActor
 final class GeminiLiveService: NSObject, ObservableObject {
     static let shared = GeminiLiveService()
-    enum State { case idle, selecting, connecting, live }
+    enum State { case idle, connecting, live }
     @Published private(set) var state = State.idle
     @Published private(set) var isMuted = true
     @Published private(set) var inputText = ""
@@ -23,7 +23,10 @@ final class GeminiLiveService: NSObject, ObservableObject {
     private var connectionTask: Task<Void, Never>?
     private var timeoutTask: Task<Void, Never>?
     private var generation = UUID()
-    private var apiKey = ""
+    private var screenGeneration = UUID()
+    private var screenTask: Task<Void, Never>?
+    @Published private(set) var isSharingScreen = false
+    @Published private(set) var isSelectingScreen = false
     private var stream: SCStream?
     private var screenOutput: GeminiLiveScreenOutput?
     private var audioEngine: AVAudioEngine?
@@ -40,28 +43,59 @@ final class GeminiLiveService: NSObject, ObservableObject {
 
     private var strings: GeminiLiveStrings { FeatureStrings.geminiLive(L10n.shared.language) }
 
-    func start(apiKey: String) {
+    func start(apiKey: String, microphone: Bool = true) {
         guard AppFeature.geminiLive.isAvailable, state == .idle else { return }
-        guard GeminiLiveSupport.endpoint(apiKey: apiKey) != nil else {
+        guard let url = GeminiLiveSupport.endpoint(apiKey: apiKey) else {
             error = strings.keyRequired
             return
         }
         error = nil
         inputText = ""
         outputText = ""
-        self.apiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        state = .selecting
         generation = UUID()
+        connect(url: url, microphone: microphone)
+    }
+
+    func shareScreen() {
+        guard AppFeature.geminiLive.isAvailable, state == .live,
+              !isSharingScreen, !isSelectingScreen else { return }
+        error = nil
+        isSelectingScreen = true
+        screenGeneration = UUID()
         let picker = SCContentSharingPicker.shared
         var config = SCContentSharingPickerConfiguration()
         config.allowedPickerModes = [.singleWindow, .singleDisplay]
         config.allowsChangingSelectedContent = false
         picker.defaultConfiguration = config
-        let observer = GeminiLivePickerObserver(service: self, id: generation)
+        let observer = GeminiLivePickerObserver(service: self, id: screenGeneration)
         pickerObserver = observer
         picker.add(observer)
         picker.isActive = true
         picker.present()
+    }
+
+    private func dismissPicker() {
+        if let pickerObserver {
+            SCContentSharingPicker.shared.remove(pickerObserver)
+            SCContentSharingPicker.shared.isActive = false
+            self.pickerObserver = nil
+        }
+    }
+
+    func stopSharingScreen() {
+        screenGeneration = UUID()
+        screenTask?.cancel()
+        screenTask = nil
+        dismissPicker()
+        isSelectingScreen = false
+        isSharingScreen = false
+        if let stream {
+            self.stream = nil
+            Task { try? await stream.stopCapture() }
+        }
+        screenOutput = nil
+        videoPending = false
+        latestFrame = nil
     }
 
     func stop() {
@@ -71,7 +105,6 @@ final class GeminiLiveService: NSObject, ObservableObject {
         microphoneRequestPending = false
         inputText = ""
         outputText = ""
-        apiKey = ""
         timeoutTask?.cancel()
         timeoutTask = nil
         connectionTask?.cancel()
@@ -85,19 +118,8 @@ final class GeminiLiveService: NSObject, ObservableObject {
         audioEngine?.stop()
         audioEngine = nil
         player = nil
-        if let stream {
-            self.stream = nil
-            Task { try? await stream.stopCapture() }
-        }
-        screenOutput = nil
         audioPending = false
-        videoPending = false
-        latestFrame = nil
-        if let pickerObserver {
-            SCContentSharingPicker.shared.remove(pickerObserver)
-            SCContentSharingPicker.shared.isActive = false
-            self.pickerObserver = nil
-        }
+        stopSharingScreen()
     }
 
     func toggleMicrophone() {
@@ -124,17 +146,13 @@ final class GeminiLiveService: NSObject, ObservableObject {
         }
     }
 
-    private func connect(filter: SCContentFilter) {
-        guard state == .selecting else { return }
-        guard AppFeature.geminiLive.isAvailable,
-              let url = GeminiLiveSupport.endpoint(apiKey: apiKey) else { stop(); return }
+    private func connect(url: URL, microphone: Bool) {
         state = .connecting
         let id = generation
         let session = URLSession(configuration: .ephemeral)
         network = session
         let socket = session.webSocketTask(with: url)
         self.socket = socket
-        apiKey = ""
         socket.resume()
         timeoutTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(15))
@@ -158,11 +176,9 @@ final class GeminiLiveService: NSObject, ObservableObject {
                     if event.failed { self.fail(self.strings.connectionFailed); return }
                     if event.ended { self.fail(self.strings.sessionEnded); return }
                     if event.ready, self.state == .connecting {
-                        try await self.startCapture(filter: filter, id: id)
-                        guard self.generation == id else { return }
                         self.timeoutTask?.cancel()
                         self.state = .live
-                        self.flushVideo()
+                        if microphone { self.toggleMicrophone() }
                     }
                     if event.interrupted { self.clearPlayback() }
                     if let text = event.inputText { self.inputText = String((self.inputText + text).suffix(4000)) }
@@ -192,20 +208,21 @@ final class GeminiLiveService: NSObject, ObservableObject {
     }
 
     private func flushVideo() {
-        guard AppFeature.geminiLive.isAvailable, state == .live, let socket,
+        guard AppFeature.geminiLive.isAvailable, state == .live, isSharingScreen, let socket,
               !videoPending, let frame = latestFrame else { return }
         latestFrame = nil
         videoPending = true
         let id = generation
+        let screenID = screenGeneration
         Task { [weak self] in
             do {
                 let data = try JSONSerialization.data(withJSONObject: GeminiLiveSupport.realtime(frame, video: true))
                 try await socket.send(.data(data))
-                guard let self, self.generation == id else { return }
+                guard let self, self.generation == id, self.screenGeneration == screenID else { return }
                 self.videoPending = false
                 self.flushVideo()
             } catch {
-                guard let self, self.generation == id else { return }
+                guard let self, self.generation == id, self.screenGeneration == screenID else { return }
                 self.fail(self.strings.connectionFailed)
             }
         }
@@ -228,7 +245,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
         }
     }
 
-    private func startCapture(filter: SCContentFilter, id: UUID) async throws {
+    private func startCapture(filter: SCContentFilter, id: UUID, screenID: UUID) async throws {
         let config = SCStreamConfiguration()
         let rect = filter.contentRect
         let scale = min(1, 1280 / max(rect.width, rect.height, 1))
@@ -241,7 +258,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
         config.capturesAudio = false
         let output = GeminiLiveScreenOutput { [weak self] data in
             Task { @MainActor in
-                guard let self, self.generation == id else { return }
+                guard let self, self.generation == id, self.screenGeneration == screenID else { return }
                 self.receiveFrame(data)
             }
         }
@@ -250,7 +267,7 @@ final class GeminiLiveService: NSObject, ObservableObject {
         self.stream = stream
         screenOutput = output
         try await stream.startCapture()
-        if generation != id { try? await stream.stopCapture() }
+        if generation != id || screenGeneration != screenID { try? await stream.stopCapture() }
     }
 
     private func startMicrophone() throws {
@@ -351,18 +368,36 @@ final class GeminiLiveService: NSObject, ObservableObject {
     }
 
     fileprivate func pickerCancelled(id: UUID) {
-        guard generation == id, state == .selecting else { return }
-        stop()
+        guard screenGeneration == id, isSelectingScreen else { return }
+        stopSharingScreen()
     }
 
     fileprivate func pickerSelected(_ filter: SCContentFilter, id: UUID) {
-        guard generation == id, state == .selecting else { return }
-        connect(filter: filter)
+        guard screenGeneration == id, state == .live, isSelectingScreen, pickerObserver != nil else { return }
+        dismissPicker()
+        let sessionID = generation
+        screenTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await startCapture(filter: filter, id: sessionID, screenID: id)
+                guard generation == sessionID, screenGeneration == id,
+                      AppFeature.geminiLive.isAvailable else { return }
+                isSelectingScreen = false
+                isSharingScreen = true
+                screenTask = nil
+                flushVideo()
+            } catch {
+                guard generation == sessionID, screenGeneration == id else { return }
+                stopSharingScreen()
+                self.error = strings.captureFailed
+            }
+        }
     }
 
     fileprivate func pickerFailed(id: UUID) {
-        guard generation == id, state == .selecting else { return }
-        fail(strings.captureFailed)
+        guard screenGeneration == id, isSelectingScreen else { return }
+        stopSharingScreen()
+        error = strings.captureFailed
     }
 }
 
@@ -370,7 +405,8 @@ extension GeminiLiveService: SCStreamDelegate {
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
         Task { @MainActor in
             guard self.stream === stream else { return }
-            self.fail(self.strings.captureFailed)
+            self.stopSharingScreen()
+            self.error = self.strings.captureFailed
         }
     }
 }

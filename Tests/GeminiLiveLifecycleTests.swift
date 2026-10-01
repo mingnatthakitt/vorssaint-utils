@@ -10,7 +10,13 @@ import ScreenCaptureKit
 /// network doubles. These tests never request permissions or send private media.
 enum GeminiLiveLifecycleTests {
     enum AVCaptureDevice {
-        static func requestAccess(for mediaType: AVMediaType) async -> Bool { true }
+        static var allowed = true
+        static var permission: CheckedContinuation<Bool, Never>?
+        static var delayPermission = false
+        static func requestAccess(for mediaType: AVMediaType) async -> Bool {
+            if delayPermission { return await withCheckedContinuation { permission = $0 } }
+            return allowed
+        }
     }
     final class AVAudioEngine {
         static var instances: [AVAudioEngine] = []
@@ -166,11 +172,13 @@ enum GeminiLiveLifecycleTests {
     @MainActor static func checks(_ suite: TestSuite) async {
         let picker = SCContentSharingPicker.shared
         let service = GeminiLiveService()
-        func select() {
+        func select() async {
+            await drain()
+            service.shareScreen()
             picker.observers.last?.contentSharingPicker(picker, didUpdateWith: SCContentFilter(), for: nil)
         }
-        service.start(apiKey: "synthetic-test-key")
-        select()
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await select()
         await drain()
         let first = URLSession.sockets.last!
         suite.expect(service.state == .live && first.videos == [Data([1])],
@@ -194,8 +202,8 @@ enum GeminiLiveLifecycleTests {
                      "stop releases capture, transport and picker observation")
         suite.expect(AVAudioEngine.instances.allSatisfy { !$0.isRunning && $0.inputNode.tap == nil },
                      "stopping the session releases the shared audio engine and microphone tap")
-        service.start(apiKey: "synthetic-test-key")
-        select()
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await select()
         await drain()
         let second = URLSession.sockets.last!
         service.screenOutput?.onFrame(Data([4]))
@@ -211,7 +219,9 @@ enum GeminiLiveLifecycleTests {
         await drain()
 
         for callback in 0..<3 {
-            service.start(apiKey: "synthetic-test-key")
+            service.start(apiKey: "synthetic-test-key", microphone: false)
+            await drain()
+            service.shareScreen()
             let previous = picker.observers.last!
             // Queue the callback first, then restart before its actor task runs.
             switch callback {
@@ -220,23 +230,30 @@ enum GeminiLiveLifecycleTests {
             default: previous.contentSharingPickerStartDidFailWithError(CancellationError())
             }
             service.stop()
-            service.start(apiKey: "synthetic-test-key")
+            service.start(apiKey: "synthetic-test-key", microphone: false)
             await drain()
-            suite.expect(service.state == .selecting && service.error == nil,
+            service.shareScreen()
+            await drain()
+            suite.expect(service.state == .live && service.isSelectingScreen && service.error == nil,
                          "queued picker callback \(callback) cannot affect a restarted attempt")
             service.stop()
         }
-        service.start(apiKey: "synthetic-test-key")
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await drain()
+        service.shareScreen()
         picker.observers.last?.contentSharingPicker(picker, didCancelFor: nil)
         await drain()
-        suite.expect(service.state == .idle, "cancelling the current picker still ends selection")
-        service.start(apiKey: "synthetic-test-key")
+        suite.expect(service.state == .live && !service.isSelectingScreen, "cancelling the picker preserves voice conversation")
+        service.stop()
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await drain()
+        service.shareScreen()
         picker.observers.last?.contentSharingPickerStartDidFailWithError(CancellationError())
         await drain()
-        suite.expect(service.state == .idle && service.error != nil, "a current picker failure still reports an error")
+        suite.expect(service.state == .live && !service.isSelectingScreen && service.error != nil, "picker failure reports an error without ending conversation")
         service.stop()
-        service.start(apiKey: "synthetic-test-key")
-        select()
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await select()
         await drain()
         AVAudioEngine.rejectVoiceProcessing = true
         service.toggleMicrophone()
@@ -245,6 +262,63 @@ enum GeminiLiveLifecycleTests {
                      && AVAudioEngine.instances.allSatisfy { !$0.isRunning && $0.inputNode.tap == nil },
                      "unavailable echo cancellation fails safely without sending untreated microphone audio")
         AVAudioEngine.rejectVoiceProcessing = false
+        service.start(apiKey: "synthetic-test-key")
+        await drain()
+        let voice = URLSession.sockets.last!
+        suite.expect(service.state == .live && !service.isMuted && service.stream == nil
+                     && picker.observers.isEmpty && voice.videos.isEmpty,
+                     "voice starts immediately without a screen picker or capture")
+        await select()
+        await drain()
+        let oldScreen = service.screenOutput!
+        let oldStream = service.stream!
+        suite.expect(service.isSharingScreen && !service.isMuted && URLSession.sockets.last === voice,
+                     "screen sharing can be added to an existing voice session")
+        service.stopSharingScreen()
+        oldScreen.onFrame(Data([8]))
+        await drain()
+        suite.expect(!service.isSharingScreen && oldStream.stopped && service.state == .live
+                     && !service.isMuted && voice.videos == [Data([1])],
+                     "stopping sharing releases capture and rejects old frames while continuing voice")
+        await select()
+        await drain()
+        service.screenOutput?.onFrame(Data([9]))
+        await drain()
+        voice.completeSend()
+        await drain()
+        suite.expect(voice.videos == [Data([1]), Data([1])],
+                     "late completion from stopped sharing cannot flush a new share's pending frame")
+        voice.completeSend()
+        await drain()
+        suite.expect(voice.videos.last == Data([9]), "a replacement share flushes its own latest frame")
+        let failedStream = service.stream!
+        service.stream(failedStream, didStopWithError: CancellationError())
+        await drain()
+        suite.expect(service.state == .live && !service.isMuted && !service.isSharingScreen && service.error != nil,
+                     "capture failure stops sharing without losing the voice conversation")
+        service.stop()
+        AVCaptureDevice.allowed = false
+        service.start(apiKey: "synthetic-test-key")
+        await drain()
+        suite.expect(service.state == .live && service.isMuted && service.error != nil && service.audioEngine == nil,
+                     "denying microphone permission does not activate audio capture")
+        service.stop()
+        AVCaptureDevice.allowed = true
+        AVCaptureDevice.delayPermission = true
+        service.start(apiKey: "synthetic-test-key")
+        await drain()
+        let engines = AVAudioEngine.instances.count
+        suite.expect(service.microphoneRequestPending, "voice launch waits for explicit microphone permission")
+        service.stop()
+        service.start(apiKey: "synthetic-test-key", microphone: false)
+        await drain()
+        AVCaptureDevice.permission?.resume(returning: true)
+        AVCaptureDevice.permission = nil
+        await drain()
+        suite.expect(service.state == .live && service.isMuted && AVAudioEngine.instances.count == engines,
+                     "late permission approval cannot activate a restarted conversation's microphone")
+        service.stop()
+        AVCaptureDevice.delayPermission = false
         for socket in URLSession.sockets { while !socket.completions.isEmpty { socket.completeSend() } }
         await drain()
         URLSession.sockets = []

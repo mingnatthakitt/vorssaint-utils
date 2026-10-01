@@ -238,7 +238,7 @@ final class FeatureRuntime: ObservableObject {
     /// Media only binds so uninstalling it can cancel work already in flight.
     private static let bindings: [AppFeature: () -> Void] = [
         .geminiLive: { Task { @MainActor in
-            if !AppFeature.geminiLive.isAvailable { GeminiLiveService.shared.stop() }
+            if !AppFeature.geminiLive.isAvailable { GeminiLiveController.shared.close() }
         } },
         .switcher: {
             WindowUseTracker.shared.syncWithFeatures()

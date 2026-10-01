@@ -62,6 +62,10 @@ def main():
     # Expose state only in the generated fixture to deliver frames without hardware.
     write("GeminiLiveLifecycle.swift", imports + "\nextension GeminiLiveLifecycleTests {\n"
           + body.replace("private(set) ", "").replace("fileprivate ", "").replace("private ", "") + "\n}\n")
+    controller = (ROOT / "Sources/Vorssaint/Services/GeminiLive/GeminiLiveController.swift").read_text()
+    body = "\n".join(line for line in controller.splitlines() if not line.startswith("import "))
+    write("GeminiLiveWindow.swift", "import AppKit\nimport Combine\nimport SwiftUI\nextension GeminiLiveWindowTests {\n"
+          + body.replace("private(set) ", "").replace("private ", "") + "\n}\n")
     write("NotchActivityPicker.swift", "import SwiftUI\n"
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchShape: Shape {")
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchActivityPicker: View {"))

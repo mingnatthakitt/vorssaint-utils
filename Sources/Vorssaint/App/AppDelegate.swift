@@ -2289,8 +2289,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         if window === settingsWindow {
-            // Settings is retained after closing, so SwiftUI may not disappear.
-            if AppFeature.geminiLive.isAvailable { MainActor.assumeIsolated { GeminiLiveService.shared.stop() } }
             // Covers size changes that end without a live resize (zoom).
             saveSettingsWindowSize(window)
             if settingsKeepsAppRegular {

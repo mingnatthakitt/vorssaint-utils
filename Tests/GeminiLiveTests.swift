@@ -69,7 +69,9 @@ enum GeminiLiveTests {
                      "Gemini is opt-in and its page and capture permissions follow feature availability")
         for language in AppLanguage.allCases {
             let strings = FeatureStrings.geminiLive(language)
-            suite.expect(!strings.privacy.isEmpty && !strings.connectionFailed.isEmpty && !strings.microphoneDenied.isEmpty,
+            suite.expect(!strings.privacy.isEmpty && !strings.connectionFailed.isEmpty && !strings.microphoneDenied.isEmpty
+                         && !strings.talk.isEmpty && !strings.end.isEmpty && !strings.listening.isEmpty
+                         && !strings.ready.isEmpty,
                          "Gemini consent and errors cover \(language.rawValue)")
         }
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.panelUtilityGeminiLive),

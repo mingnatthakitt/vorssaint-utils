@@ -5,6 +5,10 @@ import Foundation
 
 struct GeminiLiveStrings {
     let title = "Gemini Live"
+    let talk: String
+    let end: String
+    let listening: String
+    let ready: String
     let description: String
     let keyLabel: String
     let save: String
@@ -31,7 +35,11 @@ extension FeatureStrings {
         switch language {
         case .enUS:
             return GeminiLiveStrings(
-                description: "Talk about a screen or window with Gemini 3.8 Live",
+                talk: "Talk to Gemini",
+                end: "End conversation",
+                listening: "Listening…",
+                ready: "Ready to chat",
+                description: "Ask Gemini 3.8 Live a question, then share your screen if needed",
                 keyLabel: "Personal Gemini API key",
                 save: "Save key",
                 remove: "Remove key",
@@ -42,7 +50,7 @@ extension FeatureStrings {
                 active: "Screen sharing is active",
                 unmute: "Turn microphone on",
                 mute: "Mute microphone",
-                privacy: "Your selected screen and enabled microphone are sent directly to Google using your key. Google API charges may apply. The key stays in this Mac’s Keychain and is excluded from settings backups. Use headphones. You can speak to interrupt Gemini. Leaving this page ends sharing.",
+                privacy: "Microphone audio is sent directly to Google using your key. Screen sharing is optional. Google API charges may apply. The key stays in this Mac’s Keychain and is excluded from settings backups. Use headphones. You can speak to interrupt Gemini. Use the Gemini icon in the notch or menu bar to stop chatting.",
                 keyRequired: "Enter your Gemini API key first.",
                 keychainFailed: "Could not access Keychain. Try again.",
                 microphoneDenied: "Microphone access is denied. Allow Vorssaint in System Settings → Privacy & Security → Microphone.",
@@ -52,7 +60,11 @@ extension FeatureStrings {
                 sessionEnded: "The Gemini session ended. Start a new session.")
         case .ptBR:
             return GeminiLiveStrings(
-                description: "Converse sobre uma tela ou janela com Gemini 3.8 Live",
+                talk: "Conversar com Gemini",
+                end: "Encerrar conversa",
+                listening: "Ouvindo…",
+                ready: "Pronto para conversar",
+                description: "Faça uma pergunta ao Gemini 3.8 Live e compartilhe a tela se precisar",
                 keyLabel: "Sua chave de API Gemini",
                 save: "Salvar chave",
                 remove: "Remover chave",
@@ -63,7 +75,7 @@ extension FeatureStrings {
                 active: "Compartilhamento de tela ativo",
                 unmute: "Ativar microfone",
                 mute: "Silenciar microfone",
-                privacy: "A tela selecionada e o microfone ativado são enviados diretamente ao Google com sua chave. A API do Google pode ter custos. A chave fica nas Chaves deste Mac, fora dos backups de ajustes. Use fones. Você pode falar para interromper o Gemini. Sair desta página encerra o compartilhamento.",
+                privacy: "O áudio do microfone é enviado diretamente ao Google com sua chave. Compartilhar a tela é opcional. A API pode ter custos. A chave fica nas Chaves deste Mac, fora dos backups de ajustes. Use fones. Você pode falar para interromper o Gemini. Use o ícone Gemini no notch ou na barra de menus para encerrar a conversa.",
                 keyRequired: "Insira sua chave de API Gemini primeiro.",
                 keychainFailed: "Não foi possível acessar as Chaves. Tente novamente.",
                 microphoneDenied: "Acesso ao microfone negado. Permita o Vorssaint em Ajustes do Sistema → Privacidade e Segurança → Microfone.",
@@ -73,7 +85,11 @@ extension FeatureStrings {
                 sessionEnded: "A sessão do Gemini terminou. Inicie uma nova sessão.")
         case .es:
             return GeminiLiveStrings(
-                description: "Habla sobre una pantalla o ventana con Gemini 3.8 Live",
+                talk: "Hablar con Gemini",
+                end: "Terminar conversación",
+                listening: "Escuchando…",
+                ready: "Listo para hablar",
+                description: "Haz una pregunta a Gemini 3.8 Live y comparte la pantalla si lo necesitas",
                 keyLabel: "Tu clave de API Gemini",
                 save: "Guardar clave",
                 remove: "Eliminar clave",
@@ -84,7 +100,7 @@ extension FeatureStrings {
                 active: "La pantalla se está compartiendo",
                 unmute: "Activar micrófono",
                 mute: "Silenciar micrófono",
-                privacy: "La pantalla elegida y el micrófono activado se envían directamente a Google con tu clave. La API de Google puede tener costes. La clave queda en el Llavero de este Mac, fuera de las copias de ajustes. Usa auriculares. Puedes hablar para interrumpir a Gemini. Salir de esta página termina el uso compartido.",
+                privacy: "El audio del micrófono se envía directamente a Google con tu clave. Compartir pantalla es opcional. La API puede tener costes. La clave queda en el Llavero de este Mac, fuera de las copias de ajustes. Usa auriculares. Puedes hablar para interrumpir a Gemini. Usa el icono de Gemini en el notch o en la barra de menús para terminar la conversación.",
                 keyRequired: "Introduce primero tu clave de API Gemini.",
                 keychainFailed: "No se pudo acceder al Llavero. Inténtalo de nuevo.",
                 microphoneDenied: "Acceso al micrófono denegado. Permite Vorssaint en Ajustes del Sistema → Privacidad y seguridad → Micrófono.",
@@ -94,7 +110,11 @@ extension FeatureStrings {
                 sessionEnded: "La sesión de Gemini terminó. Inicia una nueva.")
         case .fr:
             return GeminiLiveStrings(
-                description: "Discutez d’un écran ou d’une fenêtre avec Gemini 3.8 Live",
+                talk: "Parler à Gemini",
+                end: "Terminer la conversation",
+                listening: "À l’écoute…",
+                ready: "Prêt à discuter",
+                description: "Posez une question à Gemini 3.8 Live, puis partagez l’écran si nécessaire",
                 keyLabel: "Votre clé API Gemini",
                 save: "Enregistrer la clé",
                 remove: "Supprimer la clé",
@@ -105,7 +125,7 @@ extension FeatureStrings {
                 active: "Partage d’écran actif",
                 unmute: "Activer le microphone",
                 mute: "Couper le microphone",
-                privacy: "L’écran choisi et le microphone activé sont envoyés directement à Google avec votre clé. L’API Google peut être payante. La clé reste dans le Trousseau de ce Mac, hors des sauvegardes de réglages. Utilisez un casque. Vous pouvez parler pour interrompre Gemini. Quitter cette page arrête le partage.",
+                privacy: "Le son du microphone est envoyé directement à Google avec votre clé. Le partage d’écran est facultatif. L’API peut être payante. La clé reste dans le Trousseau de ce Mac, hors des sauvegardes de réglages. Utilisez un casque. Vous pouvez parler pour interrompre Gemini. Utilisez l’icône Gemini dans l’encoche ou la barre des menus pour terminer la conversation.",
                 keyRequired: "Saisissez d’abord votre clé API Gemini.",
                 keychainFailed: "Impossible d’accéder au Trousseau. Réessayez.",
                 microphoneDenied: "Accès au microphone refusé. Autorisez Vorssaint dans Réglages Système → Confidentialité et sécurité → Microphone.",
@@ -115,7 +135,11 @@ extension FeatureStrings {
                 sessionEnded: "La session Gemini est terminée. Démarrez une nouvelle session.")
         case .de:
             return GeminiLiveStrings(
-                description: "Besprich einen Bildschirm oder ein Fenster mit Gemini 3.8 Live",
+                talk: "Mit Gemini sprechen",
+                end: "Gespräch beenden",
+                listening: "Hört zu…",
+                ready: "Bereit zum Gespräch",
+                description: "Stelle Gemini 3.8 Live eine Frage und teile bei Bedarf deinen Bildschirm",
                 keyLabel: "Dein Gemini-API-Schlüssel",
                 save: "Schlüssel speichern",
                 remove: "Schlüssel entfernen",
@@ -126,7 +150,7 @@ extension FeatureStrings {
                 active: "Bildschirmfreigabe aktiv",
                 unmute: "Mikrofon einschalten",
                 mute: "Mikrofon stummschalten",
-                privacy: "Der gewählte Bildschirm und das eingeschaltete Mikrofon werden mit deinem Schlüssel direkt an Google gesendet. Google kann API-Gebühren berechnen. Der Schlüssel bleibt im Schlüsselbund dieses Macs, außerhalb der Einstellungssicherungen. Nutze Kopfhörer. Du kannst Gemini unterbrechen, indem du sprichst. Beim Verlassen dieser Seite endet die Freigabe.",
+                privacy: "Mikrofon-Audio wird mit deinem Schlüssel direkt an Google gesendet. Bildschirmfreigabe ist optional. API-Gebühren können anfallen. Der Schlüssel bleibt im Schlüsselbund dieses Macs, außerhalb der Einstellungssicherungen. Nutze Kopfhörer. Du kannst Gemini unterbrechen, indem du sprichst. Beende das Gespräch über das Gemini-Symbol in der Notch oder Menüleiste.",
                 keyRequired: "Gib zuerst deinen Gemini-API-Schlüssel ein.",
                 keychainFailed: "Kein Zugriff auf den Schlüsselbund. Versuche es erneut.",
                 microphoneDenied: "Mikrofonzugriff verweigert. Erlaube Vorssaint unter Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
@@ -136,7 +160,11 @@ extension FeatureStrings {
                 sessionEnded: "Die Gemini-Sitzung wurde beendet. Starte eine neue Sitzung.")
         case .it:
             return GeminiLiveStrings(
-                description: "Parla di uno schermo o una finestra con Gemini 3.8 Live",
+                talk: "Parla con Gemini",
+                end: "Termina conversazione",
+                listening: "In ascolto…",
+                ready: "Pronto a parlare",
+                description: "Fai una domanda a Gemini 3.8 Live e condividi lo schermo se necessario",
                 keyLabel: "La tua chiave API Gemini",
                 save: "Salva chiave",
                 remove: "Rimuovi chiave",
@@ -147,7 +175,7 @@ extension FeatureStrings {
                 active: "Condivisione schermo attiva",
                 unmute: "Attiva microfono",
                 mute: "Disattiva microfono",
-                privacy: "Lo schermo scelto e il microfono attivato vengono inviati direttamente a Google con la tua chiave. L’API Google può avere costi. La chiave resta nel Portachiavi di questo Mac, fuori dai backup delle impostazioni. Usa cuffie. Puoi parlare per interrompere Gemini. Uscire da questa pagina interrompe la condivisione.",
+                privacy: "L’audio del microfono viene inviato direttamente a Google con la tua chiave. La condivisione dello schermo è facoltativa. L’API può avere costi. La chiave resta nel Portachiavi di questo Mac, fuori dai backup delle impostazioni. Usa cuffie. Puoi parlare per interrompere Gemini. Usa l’icona Gemini nel notch o nella barra dei menu per terminare la conversazione.",
                 keyRequired: "Inserisci prima la tua chiave API Gemini.",
                 keychainFailed: "Impossibile accedere al Portachiavi. Riprova.",
                 microphoneDenied: "Accesso al microfono negato. Consenti Vorssaint in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
@@ -157,7 +185,11 @@ extension FeatureStrings {
                 sessionEnded: "La sessione Gemini è terminata. Avvia una nuova sessione.")
         case .ja:
             return GeminiLiveStrings(
-                description: "Gemini 3.8 Liveと画面やウインドウについて話す",
+                talk: "Geminiと話す",
+                end: "会話を終了",
+                listening: "聞いています…",
+                ready: "会話の準備完了",
+                description: "Gemini 3.8 Liveに質問し、必要に応じて画面を共有",
                 keyLabel: "個人のGemini APIキー",
                 save: "キーを保存",
                 remove: "キーを削除",
@@ -168,7 +200,7 @@ extension FeatureStrings {
                 active: "画面を共有しています",
                 unmute: "マイクをオン",
                 mute: "マイクをミュート",
-                privacy: "選択した画面とオンにしたマイクは、あなたのキーでGoogleに直接送信されます。Google APIの料金が発生する場合があります。キーはこのMacのキーチェーンに保存され、設定バックアップには含まれません。ヘッドフォンを使用してください。話しかけるとGeminiの応答を中断できます。このページを離れると共有が終了します。",
+                privacy: "マイクの音声はあなたのキーでGoogleに直接送信されます。画面共有は任意です。APIの料金が発生する場合があります。キーはこのMacのキーチェーンに保存され、設定バックアップには含まれません。ヘッドフォンを使用してください。話しかけるとGeminiを中断できます。ノッチまたはメニューバーのGeminiアイコンから会話を終了できます。",
                 keyRequired: "先にGemini APIキーを入力してください。",
                 keychainFailed: "キーチェーンにアクセスできません。再試行してください。",
                 microphoneDenied: "マイクへのアクセスが拒否されました。システム設定 → プライバシーとセキュリティ → マイクでVorssaintを許可してください。",
@@ -178,7 +210,11 @@ extension FeatureStrings {
                 sessionEnded: "Geminiセッションが終了しました。新しいセッションを開始してください。")
         case .ko:
             return GeminiLiveStrings(
-                description: "Gemini 3.8 Live와 화면이나 창에 대해 대화하기",
+                talk: "Gemini와 대화",
+                end: "대화 종료",
+                listening: "듣고 있어요…",
+                ready: "대화 준비 완료",
+                description: "Gemini 3.8 Live에 질문하고 필요하면 화면을 공유하세요",
                 keyLabel: "개인 Gemini API 키",
                 save: "키 저장",
                 remove: "키 삭제",
@@ -189,7 +225,7 @@ extension FeatureStrings {
                 active: "화면 공유 중",
                 unmute: "마이크 켜기",
                 mute: "마이크 음소거",
-                privacy: "선택한 화면과 켜진 마이크는 내 키로 Google에 직접 전송됩니다. Google API 요금이 발생할 수 있습니다. 키는 이 Mac의 키체인에 보관되며 설정 백업에 포함되지 않습니다. 헤드폰을 사용하세요. 말을 시작하면 Gemini의 응답을 중단할 수 있습니다. 이 페이지를 떠나면 공유가 종료됩니다.",
+                privacy: "마이크 오디오는 사용자의 키로 Google에 직접 전송됩니다. 화면 공유는 선택 사항입니다. API 요금이 발생할 수 있습니다. 키는 이 Mac의 키체인에 저장되며 설정 백업에는 포함되지 않습니다. 헤드폰을 사용하세요. 말해서 Gemini를 중단할 수 있습니다. 노치 또는 메뉴 막대의 Gemini 아이콘으로 대화를 종료하세요.",
                 keyRequired: "먼저 Gemini API 키를 입력하세요.",
                 keychainFailed: "키체인에 접근할 수 없습니다. 다시 시도하세요.",
                 microphoneDenied: "마이크 접근이 거부되었습니다. 시스템 설정 → 개인정보 보호 및 보안 → 마이크에서 Vorssaint를 허용하세요.",
@@ -199,7 +235,11 @@ extension FeatureStrings {
                 sessionEnded: "Gemini 세션이 종료되었습니다. 새 세션을 시작하세요.")
         case .zhHans:
             return GeminiLiveStrings(
-                description: "与 Gemini 3.8 Live 讨论屏幕或窗口",
+                talk: "与 Gemini 对话",
+                end: "结束对话",
+                listening: "正在聆听…",
+                ready: "可以开始对话",
+                description: "向 Gemini 3.8 Live 提问，必要时再共享屏幕",
                 keyLabel: "个人 Gemini API 密钥",
                 save: "保存密钥",
                 remove: "删除密钥",
@@ -210,7 +250,7 @@ extension FeatureStrings {
                 active: "正在共享屏幕",
                 unmute: "开启麦克风",
                 mute: "麦克风静音",
-                privacy: "所选屏幕和启用的麦克风将使用你的密钥直接发送给 Google。Google API 可能产生费用。密钥保存在此 Mac 的钥匙串中，不包含在设置备份中。请使用耳机。你可以开口打断 Gemini。离开此页面将结束共享。",
+                privacy: "麦克风音频会使用你的密钥直接发送至 Google。屏幕共享是可选的。API 可能产生费用。密钥保存在此 Mac 的钥匙串中，不包含在设置备份里。请使用耳机。你可以开口打断 Gemini。通过刘海或菜单栏中的 Gemini 图标结束对话。",
                 keyRequired: "请先输入 Gemini API 密钥。",
                 keychainFailed: "无法访问钥匙串。请重试。",
                 microphoneDenied: "麦克风访问被拒绝。请在系统设置 → 隐私与安全性 → 麦克风中允许 Vorssaint。",
@@ -220,7 +260,11 @@ extension FeatureStrings {
                 sessionEnded: "Gemini 会话已结束。请开始新会话。")
         case .zhTW:
             return GeminiLiveStrings(
-                description: "與 Gemini 3.8 Live 討論螢幕或視窗",
+                talk: "與 Gemini 對話",
+                end: "結束對話",
+                listening: "正在聆聽…",
+                ready: "可以開始對話",
+                description: "向 Gemini 3.8 Live 提問，必要時再共享螢幕",
                 keyLabel: "個人 Gemini API 金鑰",
                 save: "儲存金鑰",
                 remove: "移除金鑰",
@@ -231,7 +275,7 @@ extension FeatureStrings {
                 active: "正在分享螢幕",
                 unmute: "開啟麥克風",
                 mute: "麥克風靜音",
-                privacy: "所選螢幕和啟用的麥克風將使用你的金鑰直接傳送給 Google。Google API 可能產生費用。金鑰儲存在此 Mac 的鑰匙圈中，不包含在設定備份中。請使用耳機。你可以開口打斷 Gemini。離開此頁面將結束分享。",
+                privacy: "麥克風音訊會使用你的金鑰直接傳送至 Google。螢幕共享是可選的。API 可能產生費用。金鑰保存在此 Mac 的鑰匙圈中，不包含在設定備份裡。請使用耳機。你可以開口打斷 Gemini。透過瀏海或選單列中的 Gemini 圖示結束對話。",
                 keyRequired: "請先輸入 Gemini API 金鑰。",
                 keychainFailed: "無法存取鑰匙圈。請重試。",
                 microphoneDenied: "麥克風存取遭拒。請在系統設定 → 隱私權與安全性 → 麥克風中允許 Vorssaint。",
@@ -241,7 +285,11 @@ extension FeatureStrings {
                 sessionEnded: "Gemini 工作階段已結束。請開始新的工作階段。")
         case .zhHK:
             return GeminiLiveStrings(
-                description: "與 Gemini 3.8 Live 討論螢幕或視窗",
+                talk: "與 Gemini 對話",
+                end: "結束對話",
+                listening: "正在聆聽…",
+                ready: "可以開始對話",
+                description: "向 Gemini 3.8 Live 提問，有需要時再分享螢幕",
                 keyLabel: "個人 Gemini API 金鑰",
                 save: "儲存金鑰",
                 remove: "移除金鑰",
@@ -252,7 +300,7 @@ extension FeatureStrings {
                 active: "正在分享螢幕",
                 unmute: "開啟咪高風",
                 mute: "咪高風靜音",
-                privacy: "所選螢幕和啟用的咪高風會使用你的金鑰直接傳送給 Google。Google API 可能產生費用。金鑰儲存在此 Mac 的鑰匙圈中，不包含在設定備份中。請使用耳機。你可以開口打斷 Gemini。離開此頁面會結束分享。",
+                privacy: "咪高峰音訊會使用你的金鑰直接傳送至 Google。分享螢幕是可選的。API 可能產生費用。金鑰保存在此 Mac 的鑰匙圈中，不包含在設定備份裡。請使用耳機。你可以開口打斷 Gemini。透過瀏海或選單列中的 Gemini 圖示結束對話。",
                 keyRequired: "請先輸入 Gemini API 金鑰。",
                 keychainFailed: "無法存取鑰匙圈。請重試。",
                 microphoneDenied: "咪高風存取遭拒。請在系統設定 → 私隱與保安 → 咪高風中允許 Vorssaint。",
@@ -262,7 +310,11 @@ extension FeatureStrings {
                 sessionEnded: "Gemini 工作階段已結束。請開始新的工作階段。")
         case .ru:
             return GeminiLiveStrings(
-                description: "Обсудите экран или окно с Gemini 3.8 Live",
+                talk: "Поговорить с Gemini",
+                end: "Завершить разговор",
+                listening: "Слушаю…",
+                ready: "Готов к разговору",
+                description: "Задайте вопрос Gemini 3.8 Live и при необходимости покажите экран",
                 keyLabel: "Ваш ключ API Gemini",
                 save: "Сохранить ключ",
                 remove: "Удалить ключ",
@@ -273,7 +325,7 @@ extension FeatureStrings {
                 active: "Показ экрана активен",
                 unmute: "Включить микрофон",
                 mute: "Выключить микрофон",
-                privacy: "Выбранный экран и включённый микрофон передаются напрямую Google с вашим ключом. За API Google может взиматься плата. Ключ хранится в Связке ключей этого Mac и не входит в резервные копии настроек. Используйте наушники. Вы можете прервать Gemini, начав говорить. Уход со страницы завершает показ.",
+                privacy: "Звук микрофона отправляется напрямую в Google с вашим ключом. Демонстрация экрана необязательна. API может быть платным. Ключ хранится в Связке ключей этого Mac и не входит в резервные копии настроек. Используйте наушники. Начните говорить, чтобы прервать Gemini. Завершите разговор через значок Gemini в вырезе или строке меню.",
                 keyRequired: "Сначала введите ключ API Gemini.",
                 keychainFailed: "Нет доступа к Связке ключей. Повторите попытку.",
                 microphoneDenied: "Доступ к микрофону запрещён. Разрешите Vorssaint в Системных настройках → Конфиденциальность и безопасность → Микрофон.",
@@ -283,7 +335,11 @@ extension FeatureStrings {
                 sessionEnded: "Сеанс Gemini завершён. Начните новый сеанс.")
         case .uk:
             return GeminiLiveStrings(
-                description: "Обговоріть екран або вікно з Gemini 3.8 Live",
+                talk: "Поговорити з Gemini",
+                end: "Завершити розмову",
+                listening: "Слухаю…",
+                ready: "Готовий до розмови",
+                description: "Поставте запитання Gemini 3.8 Live і за потреби поділіться екраном",
                 keyLabel: "Ваш ключ API Gemini",
                 save: "Зберегти ключ",
                 remove: "Видалити ключ",
@@ -294,7 +350,7 @@ extension FeatureStrings {
                 active: "Показ екрана активний",
                 unmute: "Увімкнути мікрофон",
                 mute: "Вимкнути мікрофон",
-                privacy: "Вибраний екран та увімкнений мікрофон передаються безпосередньо Google з вашим ключем. API Google може бути платним. Ключ зберігається у В’язці ключів цього Mac і не входить до резервних копій налаштувань. Використовуйте навушники. Ви можете перервати Gemini, почавши говорити. Вихід зі сторінки завершує показ.",
+                privacy: "Звук мікрофона надсилається безпосередньо Google з вашим ключем. Демонстрація екрана необов’язкова. API може бути платним. Ключ зберігається у В’язці ключів цього Mac і не входить до резервних копій налаштувань. Використовуйте навушники. Почніть говорити, щоб перервати Gemini. Завершіть розмову через значок Gemini у вирізі або рядку меню.",
                 keyRequired: "Спочатку введіть ключ API Gemini.",
                 keychainFailed: "Немає доступу до В’язки ключів. Спробуйте ще раз.",
                 microphoneDenied: "Доступ до мікрофона заборонено. Дозвольте Vorssaint у Системних параметрах → Приватність і безпека → Мікрофон.",
@@ -304,7 +360,11 @@ extension FeatureStrings {
                 sessionEnded: "Сеанс Gemini завершено. Почніть новий сеанс.")
         case .sk:
             return GeminiLiveStrings(
-                description: "Hovorte o obrazovke alebo okne s Gemini 3.8 Live",
+                talk: "Hovoriť s Gemini",
+                end: "Ukončiť rozhovor",
+                listening: "Počúvam…",
+                ready: "Pripravené na rozhovor",
+                description: "Položte otázku Gemini 3.8 Live a podľa potreby zdieľajte obrazovku",
                 keyLabel: "Váš kľúč API Gemini",
                 save: "Uložiť kľúč",
                 remove: "Odstrániť kľúč",
@@ -315,7 +375,7 @@ extension FeatureStrings {
                 active: "Zdieľanie obrazovky je aktívne",
                 unmute: "Zapnúť mikrofón",
                 mute: "Stlmiť mikrofón",
-                privacy: "Vybraná obrazovka a zapnutý mikrofón sa odosielajú priamo Googlu s vaším kľúčom. API Googlu môže byť spoplatnené. Kľúč ostáva v Kľúčenke tohto Macu, mimo záloh nastavení. Používajte slúchadlá. Gemini môžete prerušiť tým, že začnete hovoriť. Odchod z tejto stránky ukončí zdieľanie.",
+                privacy: "Zvuk mikrofónu sa odosiela priamo Googlu s vaším kľúčom. Zdieľanie obrazovky je voliteľné. API môže byť spoplatnené. Kľúč ostáva v Kľúčenke tohto Macu, mimo záloh nastavení. Používajte slúchadlá. Gemini môžete prerušiť tým, že začnete hovoriť. Rozhovor ukončíte ikonou Gemini vo výreze alebo v lište menu.",
                 keyRequired: "Najprv zadajte kľúč API Gemini.",
                 keychainFailed: "Prístup ku Kľúčenke zlyhal. Skúste to znova.",
                 microphoneDenied: "Prístup k mikrofónu zamietnutý. Povoľte Vorssaint v Systémových nastaveniach → Súkromie a bezpečnosť → Mikrofón.",
@@ -325,7 +385,11 @@ extension FeatureStrings {
                 sessionEnded: "Relácia Gemini sa skončila. Začnite novú reláciu.")
         case .tr:
             return GeminiLiveStrings(
-                description: "Gemini 3.8 Live ile bir ekran veya pencere hakkında konuşun",
+                talk: "Gemini ile konuş",
+                end: "Sohbeti bitir",
+                listening: "Dinliyor…",
+                ready: "Sohbete hazır",
+                description: "Gemini 3.8 Live’a soru sorun ve gerekirse ekranınızı paylaşın",
                 keyLabel: "Kişisel Gemini API anahtarı",
                 save: "Anahtarı kaydet",
                 remove: "Anahtarı kaldır",
@@ -336,7 +400,7 @@ extension FeatureStrings {
                 active: "Ekran paylaşımı etkin",
                 unmute: "Mikrofonu aç",
                 mute: "Mikrofonu sustur",
-                privacy: "Seçilen ekran ve açılan mikrofon, anahtarınızla doğrudan Google’a gönderilir. Google API ücretleri uygulanabilir. Anahtar bu Mac’in Anahtar Zinciri’nde kalır ve ayar yedeklerine dahil edilmez. Kulaklık kullanın. Konuşmaya başlayarak Gemini’nin sözünü kesebilirsiniz. Bu sayfadan ayrılmak paylaşımı sonlandırır.",
+                privacy: "Mikrofon sesi, anahtarınızla doğrudan Google’a gönderilir. Ekran paylaşımı isteğe bağlıdır. API ücretleri uygulanabilir. Anahtar bu Mac’in Anahtar Zinciri’nde kalır ve ayar yedeklerine dahil edilmez. Kulaklık kullanın. Konuşarak Gemini’nin sözünü kesebilirsiniz. Sohbeti bitirmek için çentikteki veya menü çubuğundaki Gemini simgesini kullanın.",
                 keyRequired: "Önce Gemini API anahtarınızı girin.",
                 keychainFailed: "Anahtar Zinciri’ne erişilemedi. Tekrar deneyin.",
                 microphoneDenied: "Mikrofon erişimi reddedildi. Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünde Vorssaint’e izin verin.",

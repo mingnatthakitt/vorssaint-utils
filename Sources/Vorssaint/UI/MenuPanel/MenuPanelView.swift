@@ -614,6 +614,7 @@ struct UtilitiesSection: View {
     @AppStorage(DefaultsKey.panelUtilityScreenRecorder) private var showScreenRecorder = true
     @AppStorage(DefaultsKey.panelUtilityGeminiLive) private var showGeminiLive = true
     @AppStorage(DefaultsKey.panelUtilityPortManager) private var showPortManager = true
+    @ObservedObject private var gemini = GeminiLiveService.shared
     @ObservedObject private var recorder = ScreenRecorderService.shared
     @AppStorage(DefaultsKey.clipboardHistoryEnabled) private var clipboardEnabled = false
     @AppStorage(DefaultsKey.panelUtilityOrder) private var utilityOrderRaw = ""
@@ -1016,14 +1017,29 @@ struct UtilitiesSection: View {
                                     }
                                 })
         case .geminiLive:
-            UtilityActionButton(title: FeatureStrings.geminiLive(l10n.language).title,
-                                caption: FeatureStrings.geminiLive(l10n.language).description,
+            let strings = FeatureStrings.geminiLive(l10n.language)
+            UtilityActionButton(title: gemini.state == .idle ? strings.title : strings.title + " · " + strings.end,
+                                caption: gemini.error ?? (gemini.state == .connecting ? strings.connecting
+                                    : gemini.state == .live ? (gemini.isSharingScreen ? strings.active
+                                        : gemini.isMuted ? strings.ready : strings.listening) : strings.description),
                                 systemImage: "sparkles", isEditing: editing, showsDragHandle: true,
                                 visibility: $showGeminiLive,
+                                needsAttention: gemini.error != nil,
+                                captionStaysVisible: gemini.state != .idle,
+                                accessoryTitle: gemini.isSharingScreen || gemini.isSelectingScreen ? strings.stop : strings.share,
+                                accessorySystemImage: "rectangle.on.rectangle",
+                                accessoryAction: gemini.state == .live ? {
+                                    appDelegate()?.closePopover()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        if gemini.isSharingScreen || gemini.isSelectingScreen { gemini.stopSharingScreen() }
+                                        else { gemini.shareScreen() }
+                                    }
+                                } : nil,
                                 action: {
                                     appDelegate()?.closePopover()
-                                    SettingsRouter.shared.page = .geminiLive
-                                    appDelegate()?.openSettingsWindow()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        GeminiLiveController.shared.toggle()
+                                    }
                                 })
         case .portManager:
             UtilityActionButton(title: FeatureStrings.portManager(l10n.language).title,
