@@ -284,6 +284,9 @@ final class GeminiLiveService: NSObject, ObservableObject {
         guard hardware.sampleRate > 0, hardware.channelCount > 0,
               let target = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: true),
               let converter = AVAudioConverter(from: hardware, to: target) else { throw CocoaError(.coderInvalidValue) }
+        // Voice processing can expose discrete auxiliary channels. Its first
+        // channel is the microphone; automatic downmixing can produce silence.
+        converter.channelMap = [0]
         let id = generation
         let microphoneID = microphoneGeneration
         input.installTap(onBus: 0, bufferSize: 2048, format: hardware) { [weak self] buffer, _ in

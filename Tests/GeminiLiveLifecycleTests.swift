@@ -40,7 +40,8 @@ enum GeminiLiveLifecycleTests {
                 isVoiceProcessingEnabled = enabled
             }
             func outputFormat(forBus bus: AVAudioNodeBus) -> AVAudioFormat {
-                AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 1)!
+                AVAudioFormat(standardFormatWithSampleRate: 48000,
+                              channelLayout: AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | 9)!)
             }
             func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: AVAudioFormat,
                             block: @escaping AVAudioNodeTapBlock) { tap = block }
@@ -342,13 +343,21 @@ enum GeminiLiveLifecycleTests {
                      "microphone and assistant playback share an echo-cancelled engine")
         let buffer = AVAudioPCMBuffer(pcmFormat: engine.inputNode.outputFormat(forBus: 0), frameCapacity: 2048)!
         buffer.frameLength = 2048
-        for index in 0..<2048 { buffer.floatChannelData!.pointee[index] = 0.25 }
+        for channel in 0..<Int(buffer.format.channelCount) {
+            for index in 0..<2048 { buffer.floatChannelData![channel][index] = channel == 0 ? 0.25 : 0 }
+        }
         let time = AVAudioTime(sampleTime: 0, atRate: 48000)
         let tap = engine.inputNode.tap!
         tap(buffer, time)
         await drain()
         suite.expect(!socket.audio.isEmpty && service.playbackFrames > 0,
                      "microphone PCM reaches Gemini while assistant speech is still queued")
+        let pcm = socket.audio.last ?? Data()
+        let samples = stride(from: 0, to: pcm.count - 1, by: 2).map {
+            Int(Int16(bitPattern: UInt16(pcm[$0]) | UInt16(pcm[$0 + 1]) << 8))
+        }
+        suite.expect(samples.contains { $0 > 7000 },
+                     "discrete nine-channel voice input preserves audible microphone PCM instead of sending silence")
         let audioCount = socket.audio.count
         try! socket.deliver(["serverContent": ["interrupted": true, "modelTurn": ["parts": [[
             "inlineData": ["mimeType": "audio/pcm;rate=24000", "data": speech.base64EncodedString()]
